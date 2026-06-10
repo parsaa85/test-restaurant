@@ -1,10 +1,20 @@
-export default function Home() {
-  const menu = [
-    { name: "پیتزا مخصوص", price: "۳۹۵,۰۰۰ تومان" },
-    { name: "برگر دبل", price: "۲۸۵,۰۰۰ تومان" },
-    { name: "پاستا آلفردو", price: "۳۱۵,۰۰۰ تومان" },
-    { name: "استیک گریل", price: "۶۴۵,۰۰۰ تومان" },
-  ];
+import { supabase } from "@/lib/supabase";
+
+export default async function Home() {
+  const { data: menu, error } = await supabase
+    .from("foods")
+    .select("*");
+
+console.log("MENU DATA:", menu);
+console.log("ERROR:", error);
+
+if (error) {
+  return (
+    <main className="p-10 text-red-500">
+      <pre>{JSON.stringify(error, null, 2)}</pre>
+    </main>
+  );
+}
 
   return (
     <main className="bg-black text-white min-h-screen">
@@ -42,13 +52,16 @@ export default function Home() {
         </h2>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {menu.map((item) => (
+          {menu?.map((item) => (
             <div
-              key={item.name}
+              key={item.id}
               className="border border-gray-800 rounded-2xl p-6"
             >
               <div className="flex justify-between items-center">
-                <h3 className="text-2xl">{item.name}</h3>
+                <h3 className="text-2xl">
+                  {item.title}
+                </h3>
+
                 <span className="text-yellow-400">
                   {item.price}
                 </span>
