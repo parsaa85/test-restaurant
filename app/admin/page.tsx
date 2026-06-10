@@ -8,9 +8,9 @@ export default function AdminPage() {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [foods, setFoods] = useState<any[]>([]);
-const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
   const getFoods = async () => {
-    
     const { data, error } = await supabase
       .from("foods")
       .select("*")
@@ -24,30 +24,23 @@ const [imageFile, setImageFile] = useState<File | null>(null);
     setFoods(data || []);
   };
 
-const deleteFood = async (id: number) => {
-  const confirmed = confirm("حذف شود؟");
+  const deleteFood = async (id: number) => {
+    const confirmed = confirm("حذف شود؟");
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  const { error } = await supabase
-    .from("foods")
-    .delete()
-    .eq("id", id);
+    const { error } = await supabase
+      .from("foods")
+      .delete()
+      .eq("id", id);
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
-<input
-  type="file"
-  accept="image/*"
-  onChange={(e) =>
-    setImageFile(e.target.files?.[0] || null)
-  }
-  className="w-full"
-/>
-  getFoods();
-};
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    getFoods();
+  };
 
   useEffect(() => {
     getFoods();
@@ -56,16 +49,42 @@ const deleteFood = async (id: number) => {
   const addFood = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { error } = await supabase.from("foods").insert([
-      {
-        title,
-        price: Number(price),
-        category,
-      },
-    ]);
+    let imageUrl = null;
+
+    if (imageFile) {
+      const fileName =
+        Date.now() + "-" + imageFile.name;
+
+      const { error: uploadError } =
+        await supabase.storage
+          .from("foods")
+          .upload(fileName, imageFile);
+
+      if (uploadError) {
+        alert(uploadError.message);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("foods")
+        .getPublicUrl(fileName);
+
+      imageUrl = data.publicUrl;
+    }
+
+    const { error } = await supabase
+      .from("foods")
+      .insert([
+        {
+          title,
+          price: Number(price),
+          category,
+          image: imageUrl,
+        },
+      ]);
 
     if (error) {
-      alert("خطا: " + error.message);
+      alert(error.message);
       return;
     }
 
@@ -74,6 +93,7 @@ const deleteFood = async (id: number) => {
     setTitle("");
     setPrice("");
     setCategory("");
+    setImageFile(null);
 
     getFoods();
   };
@@ -115,6 +135,15 @@ const deleteFood = async (id: number) => {
           required
         />
 
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) =>
+            setImageFile(e.target.files?.[0] || null)
+          }
+          className="w-full p-3 rounded bg-zinc-900 border border-zinc-700"
+        />
+
         <button
           type="submit"
           className="bg-yellow-500 text-black px-6 py-3 rounded font-bold"
@@ -135,6 +164,14 @@ const deleteFood = async (id: number) => {
               className="flex justify-between items-center bg-zinc-900 p-4 rounded-lg border border-zinc-800"
             >
               <div>
+                {food.image && (
+                  <img
+                    src={food.image}
+                    alt={food.title}
+                    className="w-20 h-20 object-cover rounded-lg mb-2"
+                  />
+                )}
+
                 <h3 className="font-bold text-lg">
                   {food.title}
                 </h3>
@@ -144,18 +181,18 @@ const deleteFood = async (id: number) => {
                 </p>
               </div>
 
-             <div className="flex items-center gap-4">
-  <span className="text-yellow-400 font-bold">
-    {food.price?.toLocaleString("fa-IR")} تومان
-  </span>
+              <div className="flex items-center gap-4">
+                <span className="text-yellow-400 font-bold">
+                  {food.price?.toLocaleString("fa-IR")} تومان
+                </span>
 
-  <button
-    onClick={() => deleteFood(food.id)}
-    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-  >
-    حذف
-  </button>
-</div>
+                <button
+                  onClick={() => deleteFood(food.id)}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
+                >
+                  حذف
+                </button>
+              </div>
             </div>
           ))}
         </div>

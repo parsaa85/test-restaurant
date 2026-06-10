@@ -1,22 +1,30 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
+export default function Home() {
+  const [menu, setMenu] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function Home() {
-  const { data: menu, error } = await supabase
-    .from("foods")
-    .select("*");
+  const getFoods = async () => {
+    const { data, error } = await supabase
+      .from("foods")
+      .select("*")
+      .order("id", { ascending: false });
 
-console.log("MENU DATA:", menu);
-console.log("ERROR:", error);
+    if (error) {
+      console.log(error);
+      return;
+    }
 
-if (error) {
-  return (
-    <main className="p-10 text-red-500">
-      <pre>{JSON.stringify(error, null, 2)}</pre>
-    </main>
-  );
-}
+    setMenu(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    getFoods();
+  }, []);
 
   return (
     <main className="bg-black text-white min-h-screen">
@@ -53,24 +61,28 @@ if (error) {
           منوی محبوب
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {menu?.map((item) => (
-            <div
-              key={item.id}
-              className="border border-gray-800 rounded-2xl p-6"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl">
-                  {item.title}
-                </h3>
+        {loading ? (
+          <p>در حال بارگذاری...</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {menu.map((item) => (
+              <div
+                key={item.id}
+                className="border border-gray-800 rounded-2xl p-6"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl">
+                    {item.title}
+                  </h3>
 
-                <span className="text-yellow-400">
-                  {item.price}
-                </span>
+                  <span className="text-yellow-400">
+                    {Number(item.price).toLocaleString("fa-IR")} تومان
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Gallery */}
